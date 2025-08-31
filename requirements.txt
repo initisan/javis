@@ -1,0 +1,3 @@
+# Excel文件处理相关包
+pandas>=2.0.0          # 强大的数据处理和分析库
+openpyxl>=3.1.0        # 专门处理xlsx格式的Excel文件
