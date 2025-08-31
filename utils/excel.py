@@ -1,5 +1,9 @@
 import pandas as pd
 import os
+import warnings
+
+# 过滤Excel日期格式相关的警告
+warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
 
 def filter_excel_data(file_path="wenti.xlsx", sheet_name="DTS"):
     """
@@ -21,11 +25,31 @@ def filter_excel_data(file_path="wenti.xlsx", sheet_name="DTS"):
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"文件 '{file_path}' 不存在")
         
-        # 读取Excel文件
+        # 使用多种方式尝试读取Excel文件，处理各种格式问题
         print(f"正在读取文件: {file_path}")
         print(f"工作表: {sheet_name}")
         
-        df = pd.read_excel(file_path, sheet_name=sheet_name)
+        try:
+            # 最安全的方式：使用字符串模式读取
+            df = pd.read_excel(
+                file_path, 
+                sheet_name=sheet_name,
+                engine='openpyxl',
+                dtype=str,  # 全部读取为字符串，避免类型推断问题
+                na_filter=False  # 不处理NA值
+            )
+            print("✅ 成功读取数据（安全模式）")
+        except Exception as e:
+            print(f"安全模式失败，尝试默认模式: {e}")
+            # 备用方案：默认模式
+            df = pd.read_excel(
+                file_path, 
+                sheet_name=sheet_name,
+                engine='openpyxl',
+                date_format=None,
+                keep_default_na=True,
+                na_values=['']
+            )
         
         print(f"原始数据行数: {len(df)}")
         print(f"列名: {list(df.columns)}")
@@ -60,7 +84,7 @@ def filter_excel_data(file_path="wenti.xlsx", sheet_name="DTS"):
             
             # 保存筛选结果到新文件
             output_file = "filtered_data.xlsx"
-            filtered_df.to_excel(output_file, index=False)
+            filtered_df.to_excel(output_file, index=False, engine='openpyxl')
             print(f"\n筛选结果已保存到: {output_file}")
         else:
             print("没有找到符合条件的数据")
@@ -76,7 +100,21 @@ def analyze_data_distribution(file_path="wenti.xlsx", sheet_name="DTS"):
     分析数据分布，帮助了解数据结构
     """
     try:
-        df = pd.read_excel(file_path, sheet_name=sheet_name)
+        # 使用相同的安全读取方式
+        try:
+            df = pd.read_excel(
+                file_path, 
+                sheet_name=sheet_name,
+                engine='openpyxl',
+                dtype=str,
+                na_filter=False
+            )
+        except Exception:
+            df = pd.read_excel(
+                file_path, 
+                sheet_name=sheet_name,
+                engine='openpyxl'
+            )
         
         print("=== 数据分析 ===")
         print(f"总行数: {len(df)}")
